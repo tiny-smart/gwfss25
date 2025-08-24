@@ -1,0 +1,64 @@
+MODEL:
+  BACKBONE:
+    FREEZE_AT: 0
+    NAME: "build_resnet_backbone"
+  WEIGHTS: "detectron2://ImageNetPretrained/torchvision/R-50.pkl"
+  PIXEL_MEAN: [123.675, 116.280, 103.530]
+  PIXEL_STD: [58.395, 57.120, 57.375]
+  RESNETS:
+    DEPTH: 50
+    STEM_TYPE: "basic"  # not used
+    STEM_OUT_CHANNELS: 64
+    STRIDE_IN_1X1: False
+    OUT_FEATURES: ["res2", "res3", "res4", "res5"]
+    NORM: "SyncBN"  # use syncbn for cityscapes dataset
+    RES5_MULTI_GRID: [1, 1, 1]  # not used
+DATASETS:
+  TRAIN: ("gwfss_sem_seg_train",)
+  TEST: ("gwfss_sem_seg_train",)
+SOLVER:
+  IMS_PER_BATCH: 8
+  BASE_LR: 0.0001
+  MAX_ITER: 15000
+  WARMUP_FACTOR: 1.0e-6
+  WARMUP_ITERS: 0
+  WARMUP_METHOD: "linear"
+  WEIGHT_DECAY: 0.05
+  OPTIMIZER: "ADAMW"
+  LR_SCHEDULER_NAME: "WarmupPolyLR"
+  POLY_LR_CONSTANT_ENDING: 1.0e-6
+  POLY_LR_POWER: 1.0
+  BACKBONE_MULTIPLIER: 0.1
+  CLIP_GRADIENTS:
+    ENABLED: False
+    CLIP_TYPE: "full_model"
+    CLIP_VALUE: 0.01
+    NORM_TYPE: 2.0
+  AMP:
+    ENABLED: True
+INPUT:
+  MIN_SIZE_TRAIN: !!python/object/apply:eval ["[int(x * 0.1 * 1024) for x in range(5, 21)]"]
+  MIN_SIZE_TRAIN_SAMPLING: "choice"
+  MIN_SIZE_TEST: 512
+  MAX_SIZE_TRAIN: 4096
+  MAX_SIZE_TEST: 2048
+  CROP:
+    ENABLED: True
+    TYPE: "absolute"
+    SIZE: (512, 512)
+    SINGLE_CATEGORY_MAX_AREA: 0.75
+  COLOR_AUG_SSD: True
+  SIZE_DIVISIBILITY: -1
+  FORMAT: "RGB"
+  DATASET_MAPPER_NAME: "mask_former_semantic"
+TEST:
+  EVAL_PERIOD: 15000
+  AUG:
+    ENABLED: True
+    MIN_SIZES: [512, 768, 1024, 1280, 1536, 1792]
+    MAX_SIZE: 2048
+    FLIP: True
+DATALOADER:
+  FILTER_EMPTY_ANNOTATIONS: True
+  NUM_WORKERS: 4
+VERSION: 2

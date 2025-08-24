@@ -1,0 +1,13 @@
+# ninja log v6
+0	10894	1750317566784905467	/data/slcao_data/projects/temp/source_code/sapa/sapa/build/temp.linux-x86_64-cpython-39/sapa/src/cuda/qk_cuda_kernel.o	4e64630a56e3860d
+0	14313	1750317566784905467	/data/slcao_data/projects/temp/source_code/sapa/sapa/build/temp.linux-x86_64-cpython-39/sapa/src/cuda/qk_cuda.o	2755c1ed493eacec
+1	16601	1750317566784905467	/data/slcao_data/projects/temp/source_code/sapa/sapa/build/temp.linux-x86_64-cpython-39/sapa/src/qk_ext.o	add86e0820190bd4
+1	10775	1750317583936865035	/data/slcao_data/projects/temp/source_code/sapa/sapa/build/temp.linux-x86_64-cpython-39/sapa/src/cuda/atn_cuda_kernel.o	56053e5e6b146abc
+1	14207	1750317583936865035	/data/slcao_data/projects/temp/source_code/sapa/sapa/build/temp.linux-x86_64-cpython-39/sapa/src/cuda/atn_cuda.o	219046bc210d9c30
+0	15738	1750317583936865035	/data/slcao_data/projects/temp/source_code/sapa/sapa/build/temp.linux-x86_64-cpython-39/sapa/src/atn_ext.o	b039c17c8777f0c8
+1	10775	1750425891309131338	/data/slcao_data/projects/temp/source code/projects/sapa/sapa/build/temp.linux-x86_64-cpython-39/sapa/src/cuda/qk_cuda_kernel.o	32eca17db1ee7071
+1	14060	1750425891305131345	/data/slcao_data/projects/temp/source code/projects/sapa/sapa/build/temp.linux-x86_64-cpython-39/sapa/src/cuda/qk_cuda.o	eb4f355559c36b4
+1	15592	1750425891309131338	/data/slcao_data/projects/temp/source code/projects/sapa/sapa/build/temp.linux-x86_64-cpython-39/sapa/src/qk_ext.o	46e3b6041e03bde4
+2	10759	1750425907457103202	/data/slcao_data/projects/temp/source code/projects/sapa/sapa/build/temp.linux-x86_64-cpython-39/sapa/src/cuda/atn_cuda_kernel.o	e883f0607988af1d
+2	14070	1750425907457103202	/data/slcao_data/projects/temp/source code/projects/sapa/sapa/build/temp.linux-x86_64-cpython-39/sapa/src/cuda/atn_cuda.o	93142f112ad6995d
+1	15817	1750425907457103202	/data/slcao_data/projects/temp/source code/projects/sapa/sapa/build/temp.linux-x86_64-cpython-39/sapa/src/atn_ext.o	31511a50a4813dd9

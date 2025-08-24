@@ -1,0 +1,4 @@
+# ninja log v6
+1	3229	1750317626244765044	/data/slcao_data/projects/temp/source_code/ops/build/temp.linux-x86_64-cpython-39/data/slcao_data/projects/temp/source_code/ops/src/cpu/ms_deform_attn_cpu.o	2ee83967ce3daa75
+1	12570	1750317626244765044	/data/slcao_data/projects/temp/source_code/ops/build/temp.linux-x86_64-cpython-39/data/slcao_data/projects/temp/source_code/ops/src/cuda/ms_deform_attn_cuda.o	f2c8cdca7394f81e
+1	16527	1750317626248765035	/data/slcao_data/projects/temp/source_code/ops/build/temp.linux-x86_64-cpython-39/data/slcao_data/projects/temp/source_code/ops/src/vision.o	bed6c025b3fc02ac

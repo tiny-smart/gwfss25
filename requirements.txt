@@ -1,0 +1,5 @@
+opencv-python
+pandas
+timm
+pytorch_pretrained_vit
+scipy
