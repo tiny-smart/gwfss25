@@ -6,7 +6,7 @@ This repository contains our team([HUST_TinySmart](https://www.codabench.org/pro
 
 Our solution is based on [Guided Distillation](https://github.com/facebookresearch/GuidedDistillation). We also integrates the [SAPA](https://github.com/poppinace/sapa) feature upsampling operator and utilizes [ViT-Adapter](https://github.com/czczup/ViT-Adapter) as backbone networks within a semi-supervised training framework.
 
-For details, see the paper: [First Place Solution to the MLCAS 2025 GWFSS Challenge: The Devil is in the Detail and Minority]()
+For details, see the paper: [First Place Solution to the MLCAS 2025 GWFSS Challenge: The Devil is in the Detail and Minority](https://arxiv.org/abs/2508.17305)
 
 Songliang Cao, Tianqi Hu, [Hao Lu](https://sites.google.com/site/poppinace/)
 
