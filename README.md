@@ -84,7 +84,7 @@ If you find this work or code useful for your research, please consider giving a
 ```
 @article{songliang2025gwfss
    title={First Place Solution to the MLCAS 2025 GWFSS Challenge: The Devil is in the Detail and Minority},
-   author={Cao Songliang, Hu Tianqi and Lu Hao},
+   author={Cao, Songliang and Hu, Tianqi and Lu, Hao},
    booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV) Workshops},
    year={2025}
 }
