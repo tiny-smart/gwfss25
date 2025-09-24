@@ -346,56 +346,6 @@ class MaskFormer(nn.Module):
 
         return new_outputs
     
-    def prepare_ssl_outputs_music(self, targets, thresh_class = .7, thresh_mask=.95, mask_size = 5):
-        new_outputs = []
-        music_loss = 0.0
-        bs = targets['pred_logits'].shape[0]
-        for b in range(bs):
-            mask_cls = targets['pred_logits'][b]
-            mask_pred = targets['pred_masks'][b]
-
-            objects = mask_cls.argmax(dim=1) != mask_cls.shape[1] - 1
-
-            mask_cls = mask_cls[objects]
-            mask_pred = mask_pred[objects]
-
-            # music loss
-            mask_cls_softmax = F.softmax(mask_cls, dim=-1)[..., :-1]
-            mask_pred_sigmoid = torch.sigmoid(mask_pred)
-
-            semseg = torch.einsum("qc,qhw->chw", mask_cls_softmax, mask_pred_sigmoid)
-            
-            # pos_class_index = semseg.argmax(dim=0)  # 每个像素最可能的类别
-            # pos_class_onehot = F.one_hot(pos_class_index, num_classes=semseg.shape[0]).permute(2, 0, 1).float()
-            
-            neg_class_index = semseg.argmin(dim=0)
-            neg_class_onehot = F.one_hot(neg_class_index, num_classes=semseg.shape[0]).permute(2, 0, 1).float()
-
-            # pos_ce_loss = -(pos_class_onehot * torch.log(semseg + 1e-6)).mean()
-            neg_ce_loss = -(neg_class_onehot * torch.log(torch.clamp(1 - semseg + 1e-6, min=1e-6))).mean()
-            minent_loss = -(semseg * torch.log(semseg + 1e-6)).sum(dim=0).mean()
-
-            music_loss = music_loss \
-                + neg_ce_loss \
-                + minent_loss
-            # end music loss
-            with torch.no_grad():
-                high_conf = F.softmax(mask_cls, dim=1).max(dim=1).values > thresh_class
-                mask_cls = mask_cls[high_conf]
-                mask_pred = mask_pred[high_conf]
-
-                not_empty = torch.sigmoid(mask_pred).sum(dim=(1,2)) > mask_size
-                tar_cls = mask_cls[not_empty].argmax(dim=1)
-                tar_mask = torch.sigmoid(mask_pred[not_empty]) > .5
-
-                new_outputs.append({'labels': tar_cls.clone(), 'masks': tar_mask.clone()})
-
-        # music loss mean
-        music_loss = music_loss / bs
-        # end music loss mean
-
-        return new_outputs, music_loss
-
     def save_images(self, iter, preds, mu, std, grid_size=(2, 2), real=False):
         import os
         from PIL import Image
@@ -544,14 +494,6 @@ class MaskFormer(nn.Module):
             features = self.backbone(images_unl)
             outputs = self.sem_seg_head(features)
             
-            # outputs['pred_logits'], outputs['pred_masks'] = self._reCrop(outputs['pred_logits'], outputs['pred_masks'])
-            # # print(outputs['pred_logits'].shape, outputs['pred_masks'].shape)
-            # for i, aux_output in enumerate(outputs['aux_outputs']):
-            #     # print(aux_output.keys())
-            #     # aux_output['pred_masks'] = aux_output['pred_masks'][:, :, roi[0]:roi[2], roi[1]:roi[3]]
-            #     aux_output['pred_logits'], aux_output['pred_masks'] = self._reCrop(aux_output['pred_logits'], aux_output['pred_masks'])
-            #     outputs['aux_outputs'][i] = aux_output
-            
             losses = self.ssl_criterion(outputs, batched_inputs['pseudo_label'])
 
             for k in list(losses.keys()):
@@ -569,23 +511,6 @@ class MaskFormer(nn.Module):
             losses_all.update(losses_ssl)
         
         return losses_all
-    
-    # @staticmethod
-    # def _reCrop(cls, mask):
-    #     assert mask.ndim == 4, f"Expected mask to have 4 dimensions, got {mask.ndim}"
-    #     assert cls.ndim == 3, f"Expected cls to have 3 dimensions, got {cls.ndim}"
-        
-    #     b, q, h, w = mask.shape
-    #     h2, w2 = h // 2, w // 2
-        
-    #     mask_crops = mask.unfold(2, h2, h2).unfold(3, w2, w2)
-    #     mask_crops = mask_crops.reshape(b, q, 4, h2, w2)
-    #     mask_crops = mask_crops.permute(0, 2, 1, 3, 4).reshape(b*4, q, h2, w2)
-        
-    #     cls_crops = cls.repeat_interleave(4, dim=0)
-        
-    #     return cls_crops, mask_crops
-
 
     def prepare_targets(self, targets, images):
         h_pad, w_pad = images.tensor.shape[-2:]
@@ -595,56 +520,20 @@ class MaskFormer(nn.Module):
             gt_masks = targets_per_image.gt_masks
             padded_masks = torch.zeros((gt_masks.shape[0], h_pad, w_pad), dtype=gt_masks.dtype, device=gt_masks.device)
             padded_masks[:, : gt_masks.shape[1], : gt_masks.shape[2]] = gt_masks
-            tar_gt, tar_masks = self._mask_expansion(targets_per_image.gt_classes, padded_masks)
             new_targets.append(
                 {
-                    "labels": tar_gt,
-                    "masks": tar_masks,
+                    "labels": targets_per_image.gt_classes,
+                    "masks": padded_masks,
                 }
             )
 
         return new_targets
-    
-    @staticmethod
-    def _mask_expansion(cls: torch.Tensor, masks: torch.Tensor):
-        out_cls, out_masks = [], []
-        h, w = masks.shape[-2:]
-        for label, mask in zip(cls, masks):
-            if label.item() == 2 or label.item() == 1:  # stem or head
-                mask = mask.cpu().numpy().astype(np.uint8)
-                num_instance, instances = cv2.connectedComponents(mask)
-                mask_container = torch.zeros(num_instance, h, w, device=masks.device)
-                for i in range(1, num_instance):
-                    mask_container[i-1] = torch.from_numpy((instances==i).astype(np.float32)).to(masks.device)
-                mask_container[-1] = torch.from_numpy(mask.astype(np.float32)).to(masks.device)
-                out_cls.append(label.repeat(num_instance))
-                out_masks.append(mask_container)
-            else:
-                out_cls.append(label.unsqueeze(dim=0))
-                out_masks.append(mask.unsqueeze(dim=0))
-        
-        cls_instance, masks_instance = torch.cat(out_cls, dim=0), torch.cat(out_masks, dim=0)
-
-        return cls_instance, masks_instance
 
     def semantic_inference(self, mask_cls, mask_pred):
-        # objects = mask_cls.argmax(dim=1) != mask_cls.shape[1] - 1
-        # objects_index = torch.where(objects==True)[0]
-        # print(torch.where(objects==True))
-        # if len(objects_index) >= 10:
-        #     for i, mask in enumerate(mask_pred[objects]):
-        #         temp = (mask.sigmoid()>0.5)
-        #         print(type(temp.cpu().numpy()*255), (temp.cpu().numpy().astype(np.uint8)*255).dtype)
-        #         cv2.imwrite(f'./temp_show_img/queires_{objects_index[i].item()}_{mask_cls[objects_index[i]].argmax().item()}.png', temp.cpu().numpy()*255)
-       
         mask_cls = F.softmax(mask_cls, dim=-1)[..., :-1]
         mask_pred = mask_pred.sigmoid()
         semseg = torch.einsum("qc,qhw->chw", mask_cls, mask_pred)
        
-        # print(semseg.argmax(dim=0).cpu().numpy().dtype,semseg.argmax(dim=0).cpu().numpy().shape)
-        # cv2.imwrite(f'./temp_show_img/semseg.png', semseg.argmax(dim=0).cpu().numpy().astype(np.uint8)*50)
-        # if len(torch.where(objects==True)[0]) >= 10:
-        #     exit(1)
         return semseg
 
     def panoptic_inference(self, mask_cls, mask_pred):

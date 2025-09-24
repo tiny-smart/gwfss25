@@ -622,8 +622,10 @@ class SimpleTrainerSSL(TrainerBase):
         like evaluation during training, you can overwrite its train() method.
         """
         model.train()
-        model_teacher.train()
-        model_teacher.requires_grad_(True)
+        model_teacher.eval()
+        for param in model_teacher.parameters():
+            param.detach_()
+        model_teacher.requires_grad_(False)
 
         self.model = model
         self.model_teacher = model_teacher
@@ -879,7 +881,6 @@ class AMPTrainerSSL(SimpleTrainerSSL):
         data_loader,
         data_loader_unl,
         optimizer,
-        optimizer_teacher,
         gather_metric_period=1,
         zero_grad_before_forward=False,
         grad_scaler=None,
@@ -910,7 +911,6 @@ class AMPTrainerSSL(SimpleTrainerSSL):
         self.grad_scaler = grad_scaler
         self.precision = precision
         self.log_grad_scaler = log_grad_scaler
-        self.optimizer_teacher=optimizer_teacher
 
     def run_step(self):
         """
@@ -930,7 +930,6 @@ class AMPTrainerSSL(SimpleTrainerSSL):
 
         if self.zero_grad_before_forward:
             self.optimizer.zero_grad()
-            self.optimizer_teacher.zero_grad()
 
         """
         Update teacher model weights.
@@ -940,14 +939,10 @@ class AMPTrainerSSL(SimpleTrainerSSL):
         elif self.iter > self.model_teacher.module.burn_in:
             self.update_teacher_model(ema_decay=self.model_teacher.module.ema_decay)
     
-        if self.iter >= self.model_teacher.module.burn_in:
-            with torch.no_grad():
-                teacher_preds = self.model_teacher(data_unl, return_preds=True)
-            teacher_pl = self.model_teacher.module.prepare_ssl_outputs(teacher_preds)
-            music_loss = None
-        else:
+
+        with torch.no_grad():
             teacher_preds = self.model_teacher(data_unl, return_preds=True)
-            teacher_pl, music_loss = self.model_teacher.module.prepare_ssl_outputs_music(teacher_preds)
+        teacher_pl = self.model_teacher.module.prepare_ssl_outputs(teacher_preds)
         del teacher_preds
         
         data_ssl = {'data': data_unl, 'pseudo_label': teacher_pl} 
@@ -970,13 +965,10 @@ class AMPTrainerSSL(SimpleTrainerSSL):
             else:
                 losses_unl = sum(loss_dict_unl.values())
             loss_dict.update(loss_dict_unl)
-            if music_loss is not None:
-                loss_dict['music_loss'] = music_loss.clone()
-                losses_all = losses + losses_unl + music_loss
+            losses_all = losses + losses_unl
         
         if not self.zero_grad_before_forward:
             self.optimizer.zero_grad()
-            self.optimizer_teacher.zero_grad()
 
         self.grad_scaler.scale(losses_all).backward()
 
@@ -994,7 +986,6 @@ class AMPTrainerSSL(SimpleTrainerSSL):
             self._write_metrics(loss_dict, data_time)
 
         self.grad_scaler.step(self.optimizer)
-        self.grad_scaler.step(self.optimizer_teacher)
         self.grad_scaler.update()
 
     def state_dict(self):

@@ -392,7 +392,6 @@ class DefaultTrainer(TrainerBase):
 
         if cfg.SSL.TRAIN_SSL:
             model_teacher = self.build_model(cfg)
-            optimizer_teacher = self.build_optimizer(cfg, model_teacher)
             # model_teacher.init_ema_weights(cfg.SSL.TEACHER_CKPT)
             # DetectionCheckpointer(model_teacher, save_dir=cfg.OUTPUT_DIR).resume_or_load(
             #     cfg.SSL.TEACHER_CKPT, resume=True
@@ -405,7 +404,7 @@ class DefaultTrainer(TrainerBase):
         if cfg.SSL.TRAIN_SSL:
             trainer_fn = AMPTrainerSSL if cfg.SOLVER.AMP.ENABLED else SimpleTrainerSSL
             self._trainer = trainer_fn(
-                model, model_teacher, data_loader, data_loader_unl, optimizer, optimizer_teacher
+                model, model_teacher, data_loader, data_loader_unl, optimizer
             )
             DetectionCheckpointer(self._trainer.ensemble_model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
                 cfg.SSL.TEACHER_CKPT, resume=True
